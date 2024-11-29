@@ -1,0 +1,754 @@
+﻿@* <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Form Builder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        #formBuilder {
+            margin-top: 20px;
+        }
+
+        .form-field {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-field input, 
+        .form-field select, 
+        .form-field textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .actions button {
+            padding: 8px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .actions button:hover {
+            background: #45a049;
+        }
+
+        #preview {
+            margin-top: 40px;
+        }
+
+        #preview h3 {
+            text-align: center;
+            color: #333;
+        }
+
+        #preview .preview-field {
+            margin-bottom: 20px;
+        }
+
+        #preview .preview-field input,
+        #preview .preview-field textarea,
+        #preview .preview-field select {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Dynamic Form Builder</h2>
+    <div id="formBuilder">
+        <button id="addField">Add New Field</button>
+        <form id="dynamicForm"></form>
+    </div>
+    <button id="generateForm">Generate Form</button>
+
+    <div id="preview">
+        <h3>Form Preview</h3>
+        <div id="previewContent"></div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('addField').addEventListener('click', () => {
+        addNewField();
+    });
+
+    document.getElementById('generateForm').addEventListener('click', () => {
+        generatePreview();
+    });
+
+    function addNewField() {
+        const dynamicForm = document.getElementById('dynamicForm');
+        
+        // Create a container for the field
+        const fieldContainer = document.createElement('div');
+        fieldContainer.classList.add('form-field');
+        
+        // Field Label
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.placeholder = 'Field Label';
+
+        // Field Type Selector
+        const typeSelect = document.createElement('select');
+        ['Text', 'Textarea', 'Checkbox', 'Radio', 'Dropdown', 'Date'].forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.toLowerCase();
+            option.innerText = type;
+            typeSelect.appendChild(option);
+        });
+
+        // Options Container (for dropdown, checkbox, radio)
+        const optionsContainer = document.createElement('div');
+        optionsContainer.style.display = 'none';
+
+        const addOptionButton = document.createElement('button');
+        addOptionButton.type = 'button';
+        addOptionButton.innerText = 'Add Option';
+        addOptionButton.style.marginTop = '10px';
+        addOptionButton.addEventListener('click', () => {
+            const optionInput = document.createElement('input');
+            optionInput.type = 'text';
+            optionInput.placeholder = 'Option Value';
+            optionsContainer.appendChild(optionInput);
+        });
+
+        optionsContainer.appendChild(addOptionButton);
+
+        // Remove Field Button
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.innerText = 'Remove Field';
+        removeButton.style.marginTop = '10px';
+        removeButton.addEventListener('click', () => {
+            dynamicForm.removeChild(fieldContainer);
+        });
+
+        // Event listener for type selection
+        typeSelect.addEventListener('change', (event) => {
+            const selectedType = event.target.value;
+            if (['checkbox', 'radio', 'dropdown'].includes(selectedType)) {
+                optionsContainer.style.display = 'block';
+            } else {
+                optionsContainer.style.display = 'none';
+                optionsContainer.querySelectorAll('input[type="text"]').forEach(opt => opt.remove());
+            }
+        });
+
+        // Append elements to the field container
+        fieldContainer.appendChild(labelInput);
+        fieldContainer.appendChild(typeSelect);
+        fieldContainer.appendChild(optionsContainer);
+        fieldContainer.appendChild(removeButton);
+
+        // Add the field container to the form
+        dynamicForm.appendChild(fieldContainer);
+    }
+
+    function generatePreview() {
+        const dynamicForm = document.getElementById('dynamicForm');
+        const previewContent = document.getElementById('previewContent');
+        previewContent.innerHTML = ''; // Clear previous preview
+
+        // Loop through all fields
+        dynamicForm.querySelectorAll('.form-field').forEach(field => {
+            const label = field.querySelector('input[type="text"]').value;
+            const type = field.querySelector('select').value;
+            const options = Array.from(field.querySelectorAll('div input[type="text"]')).map(opt => opt.value);
+
+            const fieldPreview = document.createElement('div');
+            fieldPreview.classList.add('preview-field');
+
+            const fieldLabel = document.createElement('label');
+            fieldLabel.innerText = label;
+            fieldPreview.appendChild(fieldLabel);
+
+            let inputElement;
+            if (type === 'text') {
+                inputElement = document.createElement('input');
+                inputElement.type = 'text';
+            } else if (type === 'textarea') {
+                inputElement = document.createElement('textarea');
+            } else if (type === 'date') {
+                inputElement = document.createElement('input');
+                inputElement.type = 'date';
+            } else if (type === 'dropdown') {
+                inputElement = document.createElement('select');
+                options.forEach(optionValue => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = optionValue;
+                    optionElement.innerText = optionValue;
+                    inputElement.appendChild(optionElement);
+                });
+            } else if (type === 'checkbox' || type === 'radio') {
+                options.forEach(optionValue => {
+                    const wrapper = document.createElement('div');
+                    const input = document.createElement('input');
+                    input.type = type;
+                    input.name = label;
+                    input.value = optionValue;
+                    const optLabel = document.createElement('label');
+                    optLabel.innerText = optionValue;
+                    wrapper.appendChild(input);
+                    wrapper.appendChild(optLabel);
+                    fieldPreview.appendChild(wrapper);
+                });
+            }
+
+            if (inputElement) {
+                fieldPreview.appendChild(inputElement);
+            }
+            previewContent.appendChild(fieldPreview);
+        });
+    }
+</script>
+
+</body>
+</html>
+ *@
+
+@* @model Abhishek_Lodhi.Models.DynamicForm
+
+@{
+    ViewData["Title"] = "Create Form";
+}
+
+<h2>Create a Form</h2>
+
+<form asp-action="MyForm" method="post" asp-controller="Form">
+    <div class="form-group">
+        <label for="Name">Form Name</label>
+        <input type="text" asp-for="Name" class="form-control" />
+    </div>
+
+    <div id="dynamicFormFields">
+        <!-- Dynamically added fields will go here -->
+    </div>
+
+    <button type="button" id="addFieldBtn" class="btn btn-primary">Add Field</button>
+    <button type="submit" class="btn btn-success">Save Form</button>
+</form> *@
+
+@* @section Scripts { *@
+   @*  <script>
+        document.getElementById('addFieldBtn').addEventListener('click', function () {
+            const formFields = document.getElementById('dynamicFormFields');
+
+            const fieldIndex = formFields.children.length;
+
+            const fieldHtml = `
+                <div class="form-group">
+                    <label>Field Label</label>
+                    <input type="text" name="Fields[${fieldIndex}].Label" class="form-control" />
+
+                    <label>Field Type</label>
+                    <select name="Fields[${fieldIndex}].FieldType" class="form-control">
+                        <option value="text">Text</option>
+                        <option value="textarea">Textarea</option>
+                        <option value="checkbox">Checkbox</option>
+                        <option value="radio">Radio</option>
+                        <option value="dropdown">Dropdown</option>
+                        <option value="date">Date</option>
+                    </select>
+
+                    <div class="options-container mt-2">
+                        <!-- Options for checkbox, radio, or dropdown -->
+                    </div>
+                    <button type="button" class="btn btn-sm btn-secondary addOptionBtn">Add Option</button>
+                </div>
+            `;
+
+            const fieldDiv = document.createElement('div');
+            fieldDiv.innerHTML = fieldHtml;
+
+            // Add event listener for "Add Option" button
+            fieldDiv.querySelector('.addOptionBtn').addEventListener('click', function () {
+                const optionsContainer = fieldDiv.querySelector('.options-container');
+                const optionIndex = optionsContainer.children.length;
+                const optionInput = `<input type="text" name="Fields[${fieldIndex}].Options[${optionIndex}]" class="form-control mt-1" placeholder="Option Value" />`;
+                optionsContainer.innerHTML += optionInput;
+            });
+
+            formFields.appendChild(fieldDiv);
+        });
+    </script> *@
+   @*  <script>
+        document.getElementById("addFieldBtn").addEventListener("click", function () {
+            const formFields = document.getElementById("dynamicFormFields");
+
+            // Create a new form field container
+            const fieldContainer = document.createElement("div");
+            fieldContainer.classList.add("form-field");
+
+            // Create label input
+            const labelInput = document.createElement("input");
+            labelInput.type = "text";
+            labelInput.placeholder = "Enter field label";
+            labelInput.name = "Fields[].Label";
+            labelInput.classList.add("form-control", "mb-2");
+
+            // Create type dropdown
+            const typeSelect = document.createElement("select");
+            typeSelect.name = "Fields[].FieldType";
+            typeSelect.classList.add("form-control", "mb-2");
+            const types = ["Text", "Textarea", "Checkbox", "Radio", "Dropdown", "Date"];
+            types.forEach(type => {
+                const option = document.createElement("option");
+                option.value = type.toLowerCase();
+                option.innerText = type;
+                typeSelect.appendChild(option);
+            });
+
+            // Container for the input field or options
+            const dynamicInputContainer = document.createElement("div");
+            dynamicInputContainer.classList.add("dynamic-input-container", "mb-2");
+
+            // Remove button
+            const removeBtn = document.createElement("button");
+            removeBtn.innerText = "Remove Field";
+            removeBtn.type = "button";
+            removeBtn.classList.add("btn", "btn-danger", "btn-sm");
+            removeBtn.addEventListener("click", function () {
+                formFields.removeChild(fieldContainer);
+            });
+
+            // Add change event for the type dropdown
+            typeSelect.addEventListener("change", function () {
+                updateDynamicInput(dynamicInputContainer, typeSelect.value);
+            });
+
+            // Initialize the input container with default type
+            updateDynamicInput(dynamicInputContainer, "text");
+
+            // Append everything to the form field container
+            fieldContainer.appendChild(labelInput);
+            fieldContainer.appendChild(typeSelect);
+            fieldContainer.appendChild(dynamicInputContainer);
+            fieldContainer.appendChild(removeBtn);
+
+            // Add the field container to the form
+            formFields.appendChild(fieldContainer);
+        });
+
+        // Function to update the dynamic input container based on the selected type
+        function updateDynamicInput(container, fieldType) {
+            container.innerHTML = ""; // Clear the container
+
+            if (fieldType === "text" || fieldType === "date") {
+                const input = document.createElement("input");
+                input.type = fieldType;
+                input.placeholder = fieldType === "date" ? "Select date" : "Enter text";
+                input.name = `Fields[].Value`;
+                input.classList.add("form-control");
+                container.appendChild(input);
+            } else if (fieldType === "textarea") {
+                const textarea = document.createElement("textarea");
+                textarea.placeholder = "Enter text";
+                textarea.name = `Fields[].Value`;
+                textarea.classList.add("form-control");
+                container.appendChild(textarea);
+            } else if (fieldType === "checkbox" || fieldType === "radio" || fieldType === "dropdown") {
+                const optionsContainer = document.createElement("div");
+                optionsContainer.classList.add("options-container");
+
+                const addOptionBtn = document.createElement("button");
+                addOptionBtn.type = "button";
+                addOptionBtn.classList.add("btn", "btn-secondary", "btn-sm", "mt-2");
+                addOptionBtn.innerText = "Add Option";
+                addOptionBtn.addEventListener("click", function () {
+                    const optionInput = document.createElement("input");
+                    optionInput.type = "text";
+                    optionInput.placeholder = "Enter option value";
+                    optionInput.name = `Fields[].Options[]`;
+                    optionInput.classList.add("form-control", "mt-1");
+                    optionsContainer.appendChild(optionInput);
+                });
+
+                // Add initial option input
+                const initialOptionInput = document.createElement("input");
+                initialOptionInput.type = "text";
+                initialOptionInput.placeholder = "Enter option value";
+                initialOptionInput.name = `Fields[].Options[]`;
+                initialOptionInput.classList.add("form-control", "mt-1");
+                optionsContainer.appendChild(initialOptionInput);
+
+                container.appendChild(optionsContainer);
+                container.appendChild(addOptionBtn);
+            }
+        }
+
+</script> *@
+@* <script>
+        document.getElementById("addFieldBtn").addEventListener("click", function () {
+            const formFields = document.getElementById("dynamicFormFields");
+
+            const fieldIndex = formFields.children.length; // Track field index for proper binding
+
+            const fieldContainer = document.createElement("div");
+            fieldContainer.classList.add("form-field", "mb-3");
+
+            const labelInput = document.createElement("input");
+            labelInput.type = "text";
+            labelInput.placeholder = "Enter field label";
+            labelInput.name = `Fields[${fieldIndex}].Label`; // Bind to model
+            labelInput.classList.add("form-control", "mb-2");
+
+            const typeSelect = document.createElement("select");
+            typeSelect.name = `Fields[${fieldIndex}].FieldType`; // Bind to model
+            typeSelect.classList.add("form-control", "mb-2");
+            ["Text", "Textarea", "Checkbox", "Radio", "Dropdown", "Date"].forEach(type => {
+                const option = document.createElement("option");
+                option.value = type.toLowerCase();
+                option.innerText = type;
+                typeSelect.appendChild(option);
+            });
+
+            const dynamicInputContainer = document.createElement("div");
+            dynamicInputContainer.classList.add("dynamic-input-container");
+
+            typeSelect.addEventListener("change", function () {
+                updateDynamicInput(dynamicInputContainer, typeSelect.value, fieldIndex);
+            });
+
+            fieldContainer.appendChild(labelInput);
+            fieldContainer.appendChild(typeSelect);
+            fieldContainer.appendChild(dynamicInputContainer);
+
+            formFields.appendChild(fieldContainer);
+            updateDynamicInput(dynamicInputContainer, "text", fieldIndex);
+        });
+
+        function updateDynamicInput(container, fieldType, fieldIndex) {
+            container.innerHTML = "";
+
+            if (fieldType === "text" || fieldType === "date") {
+                const input = document.createElement("input");
+                input.type = fieldType;
+                input.name = `Fields[${fieldIndex}].Value`; // Bind to model
+                input.placeholder = fieldType === "date" ? "Select date" : "Enter text";
+                input.classList.add("form-control");
+                container.appendChild(input);
+            } else if (fieldType === "textarea") {
+                const textarea = document.createElement("textarea");
+                textarea.name = `Fields[${fieldIndex}].Value`; // Bind to model
+                textarea.placeholder = "Enter text";
+                textarea.classList.add("form-control");
+                container.appendChild(textarea);
+            } else if (fieldType === "checkbox" || fieldType === "radio" || fieldType === "dropdown") {
+                const optionsContainer = document.createElement("div");
+                const addOptionBtn = document.createElement("button");
+                addOptionBtn.type = "button";
+                addOptionBtn.classList.add("btn", "btn-secondary", "btn-sm", "mt-2");
+                addOptionBtn.innerText = "Add Option";
+
+                addOptionBtn.addEventListener("click", function () {
+                    const optionInput = document.createElement("input");
+                    optionInput.type = "text";
+                    optionInput.name = `Fields[${fieldIndex}].Options[]`; // Bind to model
+                    optionInput.placeholder = "Enter option value";
+                    optionInput.classList.add("form-control", "mt-1");
+                    optionsContainer.appendChild(optionInput);
+                });
+
+                optionsContainer.appendChild(addOptionBtn);
+                container.appendChild(optionsContainer);
+            }
+        }
+
+</script> *@
+@* } *@
+
+
+@model Abhishek_Lodhi.Models.DynamicForm
+
+<div class="form-container">
+    <h2>Create a Dynamic Form</h2>
+    <form asp-action="MyForm" method="post">
+        <div>
+            <label for="FormName">Form Name:</label>
+            <input type="text" asp-for="Name" class="form-control mb-3" placeholder="Enter Form Name" />
+        </div>
+
+        <div id="dynamicFormFields">
+            <!-- Dynamic Fields Will Be Added Here -->
+        </div>
+
+        <button type="button" id="addFieldBtn" class="btn btn-primary mt-3">Add Field</button>
+        <button type="submit" class="btn btn-success mt-3">Submit Form</button>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+        let fieldIndex = 0;
+        debugger
+        document.getElementById("addFieldBtn").addEventListener("click", function () {
+            const formFields = document.getElementById("dynamicFormFields");
+
+            const fieldContainer = document.createElement("div");
+            fieldContainer.classList.add("form-field", "mb-4");
+            fieldContainer.setAttribute("data-index", fieldIndex);
+
+            // Label Input
+            const labelInput = document.createElement("input");
+            labelInput.type = "text";
+            labelInput.name = `Fields[${fieldIndex}].Label`;
+            labelInput.classList.add("form-control", "mb-2");
+            labelInput.placeholder = "Enter Field Label";
+
+            // Type Dropdown
+            const typeSelect = document.createElement("select");
+            typeSelect.name = `Fields[${fieldIndex}].FieldType`;
+            typeSelect.classList.add("form-select", "mb-2");
+            ["Text", "Textarea", "Checkbox", "Radio", "Dropdown", "Date"].forEach(type => {
+                const option = document.createElement("option");
+                option.value = type.toLowerCase();
+                option.innerText = type;
+                typeSelect.appendChild(option);
+            });
+
+            // Dynamic Input Container
+            const dynamicInputContainer = document.createElement("div");
+            dynamicInputContainer.classList.add("dynamic-input-container", "mt-2");
+
+            // Remove Button
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.classList.add("btn", "btn-danger", "btn-sm", "mt-2");
+            removeBtn.innerText = "Remove Field";
+            removeBtn.addEventListener("click", function () {
+                formFields.removeChild(fieldContainer);
+            });
+
+            // Add Event Listener for Type Selection
+            typeSelect.addEventListener("change", function () {
+                updateDynamicInput(dynamicInputContainer, typeSelect.value, fieldIndex);
+            });
+
+            // Append to Field Container
+            fieldContainer.appendChild(labelInput);
+            fieldContainer.appendChild(typeSelect);
+            fieldContainer.appendChild(dynamicInputContainer);
+            fieldContainer.appendChild(removeBtn);
+
+            // Add to Form Fields
+            formFields.appendChild(fieldContainer);
+
+            // Trigger Default Input Type
+            updateDynamicInput(dynamicInputContainer, "text", fieldIndex);
+
+            fieldIndex++;
+        });
+    </script>
+    <script>
+
+    function updateDynamicInput(container, fieldType, fieldIndex) {
+        container.innerHTML = ""; // Clear existing input
+        debugger;
+        if (fieldType === "text" || fieldType === "date") {
+            const input = document.createElement("input");
+            input.type = fieldType;
+            input.name = `Fields[${fieldIndex}].Value`;
+            input.classList.add("form-control");
+            container.appendChild(input);
+        } else if (fieldType === "textarea") {
+            debugger;
+            const textarea = document.createElement("textarea");
+            textarea.name = `Fields[${fieldIndex}].Value`;
+            textarea.classList.add("form-control");
+            container.appendChild(textarea);
+        } 
+        // else if (["checkbox", "radio", "dropdown"].includes(fieldType)) {
+        //     debugger;
+        //     const optionsContainer = document.createElement("div");
+        //     optionsContainer.classList.add("options-container");
+
+        //     const addOptionBtn = document.createElement("button");
+        //     addOptionBtn.type = "button";
+        //     addOptionBtn.classList.add("btn", "btn-secondary", "btn-sm", "mt-2");
+        //     addOptionBtn.innerText = "Add Option";
+
+        //     addOptionBtn.addEventListener("click", function () {
+        //         const optionInput = document.createElement("input");
+        //         optionInput.type = "text";
+        //         optionInput.name = `Fields[${fieldIndex}].Options[]`;
+        //         optionInput.placeholder = "Enter option value";
+        //         optionInput.classList.add("form-control", "mt-1");
+        //         optionsContainer.appendChild(optionInput);
+        //     });
+
+        //     optionsContainer.appendChild(addOptionBtn);
+        //     container.appendChild(optionsContainer);
+        // }
+            else if (["checkbox", "radio", "dropdown"].includes(fieldType)) {
+                const optionsContainer = document.createElement("div");
+                optionsContainer.classList.add("options-container");
+
+                const addOptionBtn = document.createElement("button");
+                addOptionBtn.type = "button";
+                addOptionBtn.classList.add("btn", "btn-secondary", "btn-sm", "mt-2");
+                addOptionBtn.innerText = "Add Option";
+
+                // Handle adding options
+                addOptionBtn.addEventListener("click", function () {
+                    const optionContainer = document.createElement("div");
+                    optionContainer.classList.add("option-item", "d-flex", "align-items-center", "mt-1");
+
+                    const optionInput = document.createElement("input");
+                    optionInput.type = "text";
+                    optionInput.placeholder = "Enter option value";
+                    optionInput.classList.add("form-control", "me-2");
+
+                    // Add preview input for checkbox or radio
+                    if (fieldType === "checkbox" || fieldType === "radio") {
+                        const previewInput = document.createElement("input");
+                        previewInput.type = fieldType;
+                        previewInput.name = `Fields[${fieldIndex}].SelectedOption`;
+                        previewInput.disabled = false;
+
+                        // Sync preview label with the input text
+                        optionInput.addEventListener("input", () => {
+                            previewInput.value = optionInput.value;
+                            previewInput.title = optionInput.value;
+                        });
+
+                        optionContainer.appendChild(previewInput);
+                    }
+
+                    // Remove button for option
+                    const removeBtn = document.createElement("button");
+                    removeBtn.type = "button";
+                    removeBtn.classList.add("btn", "btn-danger", "btn-sm");
+                    removeBtn.innerText = "Remove";
+                    removeBtn.addEventListener("click", function () {
+                        optionsContainer.removeChild(optionContainer);
+                    });
+
+                    optionContainer.appendChild(optionInput);
+                    optionContainer.appendChild(removeBtn);
+                    optionsContainer.appendChild(optionContainer);
+                });
+
+                // Append elements
+                container.appendChild(addOptionBtn);
+                container.appendChild(optionsContainer);
+
+                if (fieldType === "dropdown") {
+                    const dropdownPreview = document.createElement("select");
+                    dropdownPreview.classList.add("form-select", "mt-2");
+
+                    // Update dropdown options dynamically
+                    optionsContainer.addEventListener("input", function () {
+                        dropdownPreview.innerHTML = "";
+                        const inputs = optionsContainer.querySelectorAll('input[type="text"]');
+                        inputs.forEach(input => {
+                            const option = document.createElement("option");
+                            option.value = input.value;
+                            option.textContent = input.value;
+                            dropdownPreview.appendChild(option);
+                        });
+                    });
+
+                    container.appendChild(dropdownPreview);
+                }
+            }
+
+    }
+        function updateDropdownPreview(dropdownPreview, optionsContainer) {
+            dropdownPreview.innerHTML = ""; // Clear existing options
+            const inputs = optionsContainer.querySelectorAll('input[type="text"]');
+            inputs.forEach(input => {
+                const option = document.createElement("option");
+                option.value = input.value;
+                option.textContent = input.value;
+                dropdownPreview.appendChild(option);
+            });
+        }
+
+        function createOptionInput(fieldType, fieldIndex, optionsContainer) {
+            // Option container
+            const optionContainer = document.createElement("div");
+            optionContainer.classList.add("option-container", "d-flex", "align-items-center", "mt-1");
+
+            // Option input
+            const optionInput = document.createElement("input");
+            optionInput.type = "text";
+            optionInput.name = `Fields[${fieldIndex}].Options[]`;
+            optionInput.placeholder = "Enter option value";
+            optionInput.classList.add("form-control", "me-2");
+
+            // If checkbox or radio, render a preview of the input
+            if (fieldType === "checkbox" || fieldType === "radio") {
+                const previewInput = document.createElement("input");
+                previewInput.type = fieldType;
+                previewInput.disabled = true;
+                previewInput.classList.add("me-2");
+
+                optionInput.addEventListener("input", function () {
+                    previewInput.value = optionInput.value;
+                    previewInput.title = optionInput.value; // Tooltip for preview
+                });
+
+                optionContainer.appendChild(previewInput);
+            }
+
+            // Remove button for the option
+            const removeOptionBtn = document.createElement("button");
+            removeOptionBtn.type = "button";
+            removeOptionBtn.classList.add("btn", "btn-danger", "btn-sm");
+            removeOptionBtn.innerText = "Remove";
+            removeOptionBtn.addEventListener("click", function () {
+                optionsContainer.removeChild(optionContainer);
+            });
+
+            // Append the option input and remove button
+            optionContainer.appendChild(optionInput);
+            optionContainer.appendChild(removeOptionBtn);
+
+            return optionContainer;
+        }
+
+        
+</script>
+}

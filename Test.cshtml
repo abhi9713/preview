@@ -1,0 +1,763 @@
+﻿@*     
+<div>
+    <label for="FormName">Form Name:</label>
+    <input type="text" id="FormName" name="FormName" class="form-control mb-3" placeholder="Enter Form Name" />
+</div>
+<div id="dynamicFormFields"></div>
+    <button id="addFieldBtn" class="btn btn-primary">Add Field</button>
+    <button id="previewFormBtn" class="btn btn-secondary mt-3">Preview Form</button>
+
+    <!-- Preview Modal -->
+    <form >
+    <div id="formPreviewModal" style="display: none;">
+        <h3>Form Preview</h3>
+        <div id="formPreviewContainer"></div>
+        <button id="approveFormBtn" class="btn btn-success mt-3">Approve and Save</button>
+    </div>
+
+    <div id="formPreviewModal" style="display: none;">
+        <h3>Form Preview</h3>
+        <div id="formPreviewContainer"></div>
+        <button id="closePreviewBtn" class="btn btn-secondary mt-3">Close Preview</button>
+    </div>
+
+    </form>
+    
+
+<script>
+    // document.getElementById("previewFormBtn").addEventListener("click", function () {
+    //     const formFields = document.getElementById("dynamicFormFields").children;
+    //     const previewContainer = document.getElementById("formPreviewContainer");
+    //     const previewFormName = document.getElementById("FormName");
+        
+        
+    //     // Clear previous preview
+    //     previewContainer.innerHTML = "";
+
+    //     // Generate preview from added fields
+    //     Array.from(formFields).forEach(fieldContainer => {
+    //         debugger
+    //         const fieldIndex = fieldContainer.getAttribute("data-index");
+    //         const label = fieldContainer.querySelector(`input[name='Fields[${fieldIndex}].Label']`).value;
+    //         const fieldType = fieldContainer.querySelector(`select[name='Fields[${fieldIndex}].FieldType']`).value;
+            
+    //         // Create label for the field
+    //         const fieldLabel = document.createElement("label");
+    //         fieldLabel.innerText = label;
+    //         fieldLabel.classList.add("form-label");
+
+    //         // Generate input based on the type
+    //         let fieldInput;
+    //         if (fieldType === "text" || fieldType === "date") {
+    //             fieldInput = document.createElement("input");
+    //             fieldInput.type = fieldType;
+    //             fieldInput.classList.add("form-control");
+
+    //             const value = fieldContainer.querySelector(`input[name='Fields[${fieldIndex}].Value']`)?.value || "";
+    //             fieldInput.value = value;
+
+
+    //         } else if (fieldType === "textarea") {
+    //             fieldInput = document.createElement("textarea");
+    //             fieldInput.classList.add("form-control");
+    //         } else if (["checkbox", "radio", "dropdown"].includes(fieldType)) {
+    //             fieldInput = generateOptionsPreview(fieldType, fieldIndex, fieldContainer);
+    //         }
+
+    //         // Append label and input to the preview container
+    //         previewContainer.appendChild(fieldLabel);
+    //         if (fieldInput) previewContainer.appendChild(fieldInput);
+    //         previewContainer.appendChild(document.createElement("br"));
+    //     });
+
+    //     // Show preview modal
+    //     document.getElementById("formPreviewModal").style.display = "block";
+    // });
+
+
+    document.getElementById("previewFormBtn").addEventListener("click", function () {
+        const formPreviewContainer = document.getElementById("formPreviewContainer");
+        //formPreviewContainer.innerHTML = ""; // Clear previous preview content
+
+        // ** Step 1: Preview Form Name **
+        const formNameInput = document.getElementById("FormName");
+        const formName = formNameInput.value.trim();
+
+        if (formName) {
+            const formNamePreview = document.createElement("h4");
+            formNamePreview.textContent = `Form Name: ${formName}`;
+            formPreviewContainer.appendChild(formNamePreview);
+        } else {
+            const formNameError = document.createElement("p");
+            formNameError.textContent = "Form name is not provided.";
+            formNameError.style.color = "red";
+            formPreviewContainer.appendChild(formNameError);
+        }
+
+        // ** Step 2: Preview Dynamic Form Fields **
+        const formFields = document.getElementById("dynamicFormFields").children;
+
+        Array.from(formFields).forEach((fieldContainer) => {
+            const fieldIndex = fieldContainer.getAttribute("data-index");
+            const labelInput = fieldContainer.querySelector(`input[name='Fields[${fieldIndex}].Label']`);
+            const fieldTypeInput = fieldContainer.querySelector(`select[name='Fields[${fieldIndex}].FieldType']`);
+
+            // Fetch label and type
+            const label = labelInput ? labelInput.value : "Unnamed Field";
+            const fieldType = fieldTypeInput ? fieldTypeInput.value : "text";
+
+            // Create container for field preview
+            const fieldPreview = document.createElement("div");
+            fieldPreview.classList.add("form-group", "mb-3");
+
+            // Add label to preview
+            const fieldLabel = document.createElement("label");
+            fieldLabel.textContent = label;
+            fieldPreview.appendChild(fieldLabel);
+
+            // Create field element for preview
+            let fieldElement;
+
+            if (fieldType === "text" || fieldType === "date") {
+                fieldElement = document.createElement("input");
+                fieldElement.type = fieldType;
+                fieldElement.classList.add("form-control");
+            } else if (fieldType === "textarea") {
+                fieldElement = document.createElement("textarea");
+                fieldElement.classList.add("form-control");
+            } else if (["checkbox", "radio", "dropdown"].includes(fieldType)) {
+                fieldElement = generateOptionsPreview(fieldType, fieldIndex, fieldContainer);
+            }
+
+            // Add the preview field element
+            if (fieldElement) {
+                //fieldElement.disabled = true; // Make fields read-only
+                fieldPreview.appendChild(fieldElement);
+            }
+
+            formPreviewContainer.appendChild(fieldPreview);
+        });
+
+        // ** Step 3: Show the Preview Modal **
+        document.getElementById("formPreviewModal").style.display = "block";
+    });
+
+    // ** Close Preview Modal **
+    document.getElementById("closePreviewBtn").addEventListener("click", function () {
+        document.getElementById("formPreviewModal").style.display = "none";
+    });
+
+    // ** Helper Function for Generating Options Preview **
+    function generateOptionsPreview(fieldType, fieldIndex, fieldContainer) {
+        const optionsContainer = fieldContainer.querySelector(".options-container");
+        const optionInputs = optionsContainer ? optionsContainer.querySelectorAll("input[type='text']") : [];
+        const previewWrapper = document.createElement("div");
+
+        optionInputs.forEach((option, index) => {
+            const optionPreview = document.createElement("div");
+            optionPreview.classList.add("form-check");
+
+            const optionInput = document.createElement("input");
+            optionInput.type = fieldType === "dropdown" ? "radio" : fieldType;
+            optionInput.classList.add("form-check-input");
+            optionInput.name = `preview-${fieldIndex}`;
+            optionInput.id = `preview-${fieldIndex}-${index}`;
+            optionInput.disabled = true;
+
+            const optionLabel = document.createElement("label");
+            optionLabel.classList.add("form-check-label");
+            optionLabel.htmlFor = `preview-${fieldIndex}-${index}`;
+            optionLabel.textContent = option.value;
+
+            optionPreview.appendChild(optionInput);
+            optionPreview.appendChild(optionLabel);
+            previewWrapper.appendChild(optionPreview);
+        });
+
+        return previewWrapper;
+    }
+
+
+
+    // Generate preview for checkbox, radio, and dropdown
+    function generateOptionsPreview(fieldType, fieldIndex, fieldContainer) {
+        const optionsContainer = fieldContainer.querySelector(".options-container");
+        const options = optionsContainer.querySelectorAll("input[type='text']");
+
+        if (fieldType === "dropdown") {
+            const select = document.createElement("select");
+            select.classList.add("form-select");
+            options.forEach(option => {
+                const optionElement = document.createElement("option");
+                optionElement.value = option.value;
+                optionElement.innerText = option.value;
+                select.appendChild(optionElement);
+            });
+            return select;
+        } else {
+            const container = document.createElement("div");
+            options.forEach(option => {
+                const input = document.createElement("input");
+                input.type = fieldType;
+                input.name = `preview_${fieldType}`;
+                input.value = option.value;
+                input.id = `preview_${fieldType}_${option.value}`;
+
+                const label = document.createElement("label");
+                label.htmlFor = input.id;
+                label.innerText = option.value;
+
+                container.appendChild(input);
+                container.appendChild(label);
+                container.appendChild(document.createElement("br"));
+            });
+            return container;
+        }
+    }
+
+    // Save the form after approval
+    document.getElementById("approveFormBtn").addEventListener("click", function () {
+        alert("Form Approved and Ready for Submission!");
+        // Trigger form submission here
+        // e.g., form.submit() or AJAX call
+    });
+    </script>
+
+    <script>
+    let fieldIndex = 0;
+
+    document.getElementById("addFieldBtn").addEventListener("click", function () {
+        const formFields = document.getElementById("dynamicFormFields");
+
+        const fieldContainer = document.createElement("div");
+        fieldContainer.classList.add("form-field", "mb-4");
+        fieldContainer.setAttribute("data-index", fieldIndex);
+
+        // Label Input
+        const labelInput = document.createElement("input");
+        labelInput.type = "text";
+        labelInput.name = `Fields[${fieldIndex}].Label`;
+        labelInput.classList.add("form-control", "mb-2");
+        labelInput.placeholder = "Enter Field Label";
+
+        // Type Dropdown
+        const typeSelect = document.createElement("select");
+        typeSelect.name = `Fields[${fieldIndex}].FieldType`;
+        typeSelect.classList.add("form-select", "mb-2");
+        ["Text", "Textarea", "Checkbox", "Radio", "Dropdown", "Date"].forEach(type => {
+            const option = document.createElement("option");
+            option.value = type.toLowerCase();
+            option.innerText = type;
+            typeSelect.appendChild(option);
+        });
+
+        // Dynamic Input Container
+        const dynamicInputContainer = document.createElement("div");
+        dynamicInputContainer.classList.add("dynamic-input-container", "mt-2");
+
+        // Remove Button
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.classList.add("btn", "btn-danger", "btn-sm", "mt-2");
+        removeBtn.innerText = "Remove Field";
+        removeBtn.addEventListener("click", function () {
+            formFields.removeChild(fieldContainer);
+        });
+
+        // Add Event Listener for Type Selection
+        // typeSelect.addEventListener("change", function () {
+        //     updateDynamicInput(dynamicInputContainer, typeSelect.value, fieldIndex);
+        // });
+
+        // Append to Field Container
+        fieldContainer.appendChild(labelInput);
+        fieldContainer.appendChild(typeSelect);
+        fieldContainer.appendChild(dynamicInputContainer);
+        fieldContainer.appendChild(removeBtn);
+
+        // Add to Form Fields
+        formFields.appendChild(fieldContainer);
+
+        // Trigger Default Input Type
+        updateDynamicInput(dynamicInputContainer, "text", fieldIndex);
+
+        fieldIndex++;
+    });
+</script>
+<script>
+
+    function updateDynamicInput(container, fieldType, fieldIndex) {
+        debugger;
+        container.innerHTML = ""; // Clear existing input
+        debugger;
+        if (fieldType === "text" || fieldType === "date") {
+            const input = document.createElement("input");
+            input.type = fieldType;
+            input.name = `Fields[${fieldIndex}].Value`;
+            input.classList.add("form-control");
+            container.appendChild(input);
+        } else if (fieldType === "textarea") {
+            debugger;
+            const textarea = document.createElement("textarea");
+            textarea.name = `Fields[${fieldIndex}].Value`;
+            textarea.classList.add("form-control");
+            container.appendChild(textarea);
+        }
+        // else if (["checkbox", "radio", "dropdown"].includes(fieldType)) {
+        //     debugger;
+        //     const optionsContainer = document.createElement("div");
+        //     optionsContainer.classList.add("options-container");
+
+        //     const addOptionBtn = document.createElement("button");
+        //     addOptionBtn.type = "button";
+        //     addOptionBtn.classList.add("btn", "btn-secondary", "btn-sm", "mt-2");
+        //     addOptionBtn.innerText = "Add Option";
+
+        //     addOptionBtn.addEventListener("click", function () {
+        //         const optionInput = document.createElement("input");
+        //         optionInput.type = "text";
+        //         optionInput.name = `Fields[${fieldIndex}].Options[]`;
+        //         optionInput.placeholder = "Enter option value";
+        //         optionInput.classList.add("form-control", "mt-1");
+        //         optionsContainer.appendChild(optionInput);
+        //     });
+
+        //     optionsContainer.appendChild(addOptionBtn);
+        //     container.appendChild(optionsContainer);
+        // }
+        else if (["checkbox", "radio", "dropdown"].includes(fieldType)) {
+            const optionsContainer = document.createElement("div");
+            optionsContainer.classList.add("options-container");
+
+            const addOptionBtn = document.createElement("button");
+            addOptionBtn.type = "button";
+            addOptionBtn.classList.add("btn", "btn-secondary", "btn-sm", "mt-2");
+            addOptionBtn.innerText = "Add Option";
+
+            // Handle adding options
+            addOptionBtn.addEventListener("click", function () {
+                const optionContainer = document.createElement("div");
+                optionContainer.classList.add("option-item", "d-flex", "align-items-center", "mt-1");
+
+                const optionInput = document.createElement("input");
+                optionInput.type = "text";
+                optionInput.placeholder = "Enter option value";
+                optionInput.classList.add("form-control", "me-2");
+
+                // Add preview input for checkbox or radio
+                if (fieldType === "checkbox" || fieldType === "radio") {
+                    const previewInput = document.createElement("input");
+                    previewInput.type = fieldType;
+                    previewInput.name = `Fields[${fieldIndex}].SelectedOption`;
+                    previewInput.disabled = false;
+
+                    // Sync preview label with the input text
+                    optionInput.addEventListener("input", () => {
+                        previewInput.value = optionInput.value;
+                        previewInput.title = optionInput.value;
+                    });
+
+                    optionContainer.appendChild(previewInput);
+                }
+
+                // Remove button for option
+                const removeBtn = document.createElement("button");
+                removeBtn.type = "button";
+                removeBtn.classList.add("btn", "btn-danger", "btn-sm");
+                removeBtn.innerText = "Remove";
+                removeBtn.addEventListener("click", function () {
+                    optionsContainer.removeChild(optionContainer);
+                });
+
+                optionContainer.appendChild(optionInput);
+                optionContainer.appendChild(removeBtn);
+                optionsContainer.appendChild(optionContainer);
+            });
+
+            // Append elements
+            container.appendChild(addOptionBtn);
+            container.appendChild(optionsContainer);
+
+            if (fieldType === "dropdown") {
+                const dropdownPreview = document.createElement("select");
+                dropdownPreview.classList.add("form-select", "mt-2");
+
+                // Update dropdown options dynamically
+                optionsContainer.addEventListener("input", function () {
+                    dropdownPreview.innerHTML = "";
+                    const inputs = optionsContainer.querySelectorAll('input[type="text"]');
+                    inputs.forEach(input => {
+                        const option = document.createElement("option");
+                        option.value = input.value;
+                        option.textContent = input.value;
+                        dropdownPreview.appendChild(option);
+                    });
+                });
+
+                container.appendChild(dropdownPreview);
+            }
+        }
+
+    }
+    function updateDropdownPreview(dropdownPreview, optionsContainer) {
+        dropdownPreview.innerHTML = ""; // Clear existing options
+        const inputs = optionsContainer.querySelectorAll('input[type="text"]');
+        inputs.forEach(input => {
+            const option = document.createElement("option");
+            option.value = input.value;
+            option.textContent = input.value;
+            dropdownPreview.appendChild(option);
+        });
+    }
+
+    function createOptionInput(fieldType, fieldIndex, optionsContainer) {
+        // Option container
+        const optionContainer = document.createElement("div");
+        optionContainer.classList.add("option-container", "d-flex", "align-items-center", "mt-1");
+
+        // Option input
+        const optionInput = document.createElement("input");
+        optionInput.type = "text";
+        optionInput.name = `Fields[${fieldIndex}].Options[]`;
+        optionInput.placeholder = "Enter option value";
+        optionInput.classList.add("form-control", "me-2");
+
+        // If checkbox or radio, render a preview of the input
+        if (fieldType === "checkbox" || fieldType === "radio") {
+            const previewInput = document.createElement("input");
+            previewInput.type = fieldType;
+            previewInput.disabled = true;
+            previewInput.classList.add("me-2");
+
+            optionInput.addEventListener("input", function () {
+                previewInput.value = optionInput.value;
+                previewInput.title = optionInput.value; // Tooltip for preview
+            });
+
+            optionContainer.appendChild(previewInput);
+        }
+
+        // Remove button for the option
+        const removeOptionBtn = document.createElement("button");
+        removeOptionBtn.type = "button";
+        removeOptionBtn.classList.add("btn", "btn-danger", "btn-sm");
+        removeOptionBtn.innerText = "Remove";
+        removeOptionBtn.addEventListener("click", function () {
+            optionsContainer.removeChild(optionContainer);
+        });
+
+        // Append the option input and remove button
+        optionContainer.appendChild(optionInput);
+        optionContainer.appendChild(removeOptionBtn);
+
+        return optionContainer;
+    }
+
+    // document.getElementById("approveFormBtn").addEventListener("click", function () {
+    //     // Gather form data
+    //     debugger
+    //     const formData = [];
+    //     const formFields = document.getElementById("dynamicFormFields").children;
+    //     debugger
+    //     Array.from(formFields).forEach(fieldContainer => {
+    //         const fieldIndex = fieldContainer.getAttribute("data-index");
+    //         const label = fieldContainer.querySelector(`input[name='Fields[${fieldIndex}].Label']`).value;
+    //         console.log("label"+label);
+    //         const fieldType = fieldContainer.querySelector(`select[name='Fields[${fieldIndex}].FieldType']`).value;
+    //         debugger
+    //         const options = [];
+
+    //         // Collect options for dropdown, checkbox, and radio
+    //         if (["checkbox", "radio", "dropdown"].includes(fieldType)) {
+    //             const optionsContainer = fieldContainer.querySelector(".options-container");
+    //             const optionInputs = optionsContainer.querySelectorAll("input[type='text']");
+    //             optionInputs.forEach(option => {
+    //                 options.push(option.value);
+    //             });
+    //         }
+    //         debugger
+            
+    //         // Push field data into formData
+    //         formData.push({
+    //             Label: label,
+    //             FieldType: fieldType,
+    //             Options: options
+    //         });
+    //     });
+    //     console.log(formData)
+    //     // Make an AJAX POST request to save the form
+    //     $.ajax({
+    //         url: '/Form/SaveForm', // Update this with your actual controller endpoint
+    //         type: 'POST',
+    //         contentType: 'application/json',
+    //         data: JSON.stringify({ Fields: formData }), // Pass the form data as JSON
+    //         success: function (response) {
+    //             alert("Form saved successfully!");
+    //             console.log(response);
+    //         },
+    //         error: function (xhr, status, error) {
+    //             debugger;
+    //             alert("An error occurred while saving the form.");
+    //             console.error(error);
+    //         }
+    //     });
+    // });
+
+    document.getElementById("approveFormBtn").addEventListener("click", function () {
+        debugger;
+        const formData = [];
+        const formFields = document.getElementById("dynamicFormFields").children;
+
+        Array.from(formFields).forEach(fieldContainer => {
+            debugger;
+            const fieldIndex = fieldContainer.getAttribute("data-index");
+            const label = fieldContainer.querySelector(`input[name='Fields[${fieldIndex}].Label']`).value;
+            const fieldType = fieldContainer.querySelector(`select[name='Fields[${fieldIndex}].FieldType']`).value;
+            const options = [];
+            let value = "";
+            let form = "";
+
+            // Collect options for dropdown, checkbox, and radio
+            if (["checkbox", "radio", "dropdown"].includes(fieldType)) {
+                const optionsContainer = fieldContainer.querySelector(".options-container");
+                const optionInputs = optionsContainer.querySelectorAll("input[type='text']");
+                optionInputs.forEach(option => {
+                    options.push(option.value);
+                });
+
+                // Capture selected value for dropdown
+                if (fieldType === "dropdown") {
+                    const dropdown = fieldContainer.querySelector("select");
+                    value = dropdown ? dropdown.value : "";
+                }
+
+                // Capture selected value for radio/checkbox
+                if (fieldType === "radio" || fieldType === "checkbox") {
+                    const selected = optionsContainer.querySelector(`input[type='${fieldType}']:checked`);
+                    value = selected ? selected.value : "";
+                }
+            } else {
+                // Capture value for text, textarea, or date
+                const input = fieldContainer.querySelector(`input[name='Fields[${fieldIndex}].Value']`);
+                if (input) {
+                    value = input.value;
+                }
+            }
+
+                  form =  document.getElementById("FormName").value;
+
+            debugger;
+            // Push field data into formData
+            formData.push({
+                Label: label,
+                FieldType: fieldType,
+                Options: options,
+                Value: value, // Add the captured value
+                Name:form
+            });
+        });
+        debugger;
+        // Make an AJAX POST request to save the form
+        $.ajax({
+            url: '/Form/SaveForm', // Update with your actual endpoint
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ Fields: formData }), // Pass the form data as JSON
+            success: function (response) {
+                alert("Form saved successfully!");
+                console.log(response);
+            },
+            error: function (xhr, status, error) {
+                alert("An error occurred while saving the form.");
+                console.error(error);
+            }
+        });
+    });
+
+
+</script>
+ *@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Form Builder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container my-4">
+        <h1 class="text-center">Dynamic Form Builder</h1>
+        <div class="row">
+            <!-- Form Configuration -->
+            <div class="col-md-6">
+                <h4>Add Form Fields</h4>
+                <form id="fieldForm">
+                    <div class="form-group mb-3">
+                        <label for="fieldType" class="form-label">Field Type</label>
+                        <select id="fieldType" class="form-select" required>
+                            <option value="text">Text</option>
+                            <option value="textarea">Textarea</option>
+                            <option value="checkbox">Checkbox</option>
+                            <option value="radio">Radio</option>
+                            <option value="select">Select</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="fieldLabel" class="form-label">Field Label</label>
+                        <input type="text" id="fieldLabel" class="form-control" placeholder="Enter field label" required>
+                    </div>
+                    <div class="form-group mb-3" id="optionsContainer" style="display: none;">
+                        <label for="fieldOptions" class="form-label">Options (comma-separated)</label>
+                        <textarea id="fieldOptions" class="form-control" placeholder="Option1, Option2, Option3"></textarea>
+                    </div>
+                    <button type="button" id="addField" class="btn btn-primary">Add Field</button>
+                </form>
+            </div>
+
+            <!-- Form Preview -->
+            <div class="col-md-6">
+                <h4>Form Preview</h4>
+                <form id="previewForm" class="border p-3">
+                    <p class="text-muted">Your form will appear here.</p>
+                </form>
+                <button type="button" id="saveForm" class="btn btn-success mt-3">Save Form</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            const fields = []; // Store all fields
+
+            // Show options input for applicable field types
+            $('#fieldType').on('change', function () {
+                const type = $(this).val();
+                if (type === 'checkbox' || type === 'radio' || type === 'select') {
+                    $('#optionsContainer').show();
+                } else {
+                    $('#optionsContainer').hide();
+                    $('#fieldOptions').val(''); // Clear options
+                }
+            });
+
+            // Add field to the form
+            $('#addField').on('click', function () {
+                const fieldType = $('#fieldType').val();
+                const fieldLabel = $('#fieldLabel').val();
+                const fieldOptions = $('#fieldOptions').val();
+
+                if (!fieldLabel) {
+                    alert('Field label is required.');
+                    return;
+                }
+
+                const field = {
+                    type: fieldType,
+                    label: fieldLabel,
+                    options: fieldType === 'checkbox' || fieldType === 'radio' || fieldType === 'select' ? fieldOptions.split(',') : null,
+                };
+
+                fields.push(field);
+                renderForm();
+                $('#fieldForm')[0].reset(); // Clear the form
+                $('#optionsContainer').hide(); // Hide options input
+            });
+
+            // Render the form in the preview
+            function renderForm() {
+                const form = $('#previewForm');
+                form.empty();
+
+                fields.forEach((field, index) => {
+                    let fieldHTML = `<div class="mb-3">
+                <label class="form-label">${field.label}</label>`;
+
+                    if (field.type === 'text') {
+                        fieldHTML += `<input type="text" class="form-control" />`;
+                    } else if (field.type === 'textarea') {
+                        fieldHTML += `<textarea class="form-control" rows="3"></textarea>`;
+                    } else if (field.type === 'checkbox' || field.type === 'radio') {
+                        field.options.forEach(option => {
+                            fieldHTML += `
+                    <div class="form-check">
+                      <input class="form-check-input" type="${field.type}" name="${field.label}" value="${option.trim()}">
+                      <label class="form-check-label">${option.trim()}</label>
+                    </div>`;
+                        });
+                    } else if (field.type === 'select') {
+                        fieldHTML += `<select class="form-select">`;
+                        field.options.forEach(option => {
+                            fieldHTML += `<option value="${option.trim()}">${option.trim()}</option>`;
+                        });
+                        fieldHTML += `</select>`;
+                    }
+
+                    fieldHTML += `<button type="button" class="btn btn-danger btn-sm mt-2 removeField" data-index="${index}">Remove</button>`;
+                    fieldHTML += `</div>`;
+                    form.append(fieldHTML);
+                });
+
+                // Attach event listener for removing fields
+                $('.removeField').on('click', function () {
+                    const index = $(this).data('index');
+                    fields.splice(index, 1);
+                    renderForm();
+                });
+            }
+
+            // Save form configuration
+            $('#saveForm').on('click', function () {
+                if (fields.length === 0) {
+                    alert('No fields to save.');
+                    return;
+                }
+
+                console.log('Form Saved:', fields);
+                debugger
+                alert('Form configuration saved! Check the console for details.');
+                $('#saveForm').on('click', function () {
+                    if (fields.length === 0) {
+                        alert('No fields to save.');
+                        return;
+                    }
+
+                    const formData = {
+                        Name: "Dynamic Form", // You can replace this with a user-defined form name
+                        Fields: fields.map(field => ({
+                            Label: field.label,
+                            FieldType: field.type,
+                            Options: field.options || [],
+                            Value: null, // You can populate values if needed for editing
+                            SelectedOption: null // Placeholder for selected value
+                        }))
+                    };
+
+                    // Make AJAX call to save the form
+                    $.ajax({
+                        url: '/Form/SaveForm',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(formData),
+                        success: function (response) {
+                            alert(response.message);
+                            console.log('Form saved successfully:', response);
+                        },
+                        error: function (error) {
+                            alert('Failed to save the form. Check the console for details.');
+                            console.error('Error saving form:', error);
+                        }
+                    });
+                });
+            });
+        });
+
+       
+
+    </script>
+</body>
+</html>
